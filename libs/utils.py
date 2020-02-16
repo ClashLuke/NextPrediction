@@ -2,6 +2,7 @@ from LocAtE.libs import *
 import pandas
 import torch
 import time
+import os
 from .config import *
 
 COLLUMN_MEAN = []
@@ -61,9 +62,13 @@ class History:
             self.data.append(item)
 
     def plot(self, filename, plot=True):
+        try:
+            os.mkdir('error_plots')
+        except OSError:
+            pass
         if self.record:
             if plot:
-                plot_hist(lwma(self.data), filename)
+                plot_hist(lwma(self.data), f'error_plots/{filename}')
             print(f" | Average: {sum(self.data) / len(self.data):.4f}")
         else:
             print('')
