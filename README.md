@@ -76,7 +76,7 @@ With less than 0.68 average error after training the model for half an hour on a
 convergence is fast and the results are powerful. However, while still having visible convergence, they aren't close to 
 good enough for production-level accuracy. That's why a testing environment using a jupyter notebook on colaboratory
 with 17 million parameters was deployed, yielding similar results in minutes.\
-The best raw performance achieved, with two hours of training on CPU, is an incredible 0.49. With this accuracy, 
+The best raw performance achieved, with two hours of training on CPU, is an incredible 0.47. With this accuracy, 
 predictions can not just be made but also relied on.
 
 ## Application
