@@ -142,7 +142,7 @@ def process_epoch(epoch, model: torch.nn.Module, expanded_trainings_data: torch.
         target = expanded_trainings_data[i:i + BATCH_SIZE]
         source = get_dropped_out_data(target)
         model_out = model(source)
-        loss = (model_out - target) ** 2
+        loss = (model_out - target).abs()
         loss = loss.mean()
         if train:
             loss.backward()
