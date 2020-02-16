@@ -74,7 +74,7 @@ class History:
             print('')
 
 
-DROPOUT = torch.ones((4, 6))
+DROPOUT = torch.ones((4, 6)).to(device)
 DROPOUT[0, 0] = 0
 DROPOUT[1, 1] = 0
 DROPOUT[2, 2] = 0
