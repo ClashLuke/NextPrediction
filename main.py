@@ -5,7 +5,10 @@ from libs import *
 
 
 model = get_auto_encoder(FEATURE_LIST, INPUTS)
-print(model)
-trainings_data = get_trainings_data('nextbike.csv')
+dataset = get_dataset('nextbike.csv')
+train_data, test_data, eval_data = train_test_eval_split(dataset)
 model, optimizer = get_model(model, LEARNING_RATE, device)
-train(model, trainings_data, INPUTS, optimizer, log_level=3)
+print(model)
+print(f'Parameters: {parameter_count(model)}')
+train(model, train_data, INPUTS, optimizer, test_data=test_data, log_level=3)
+eval(model, eval_data)
