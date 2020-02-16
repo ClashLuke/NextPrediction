@@ -100,8 +100,15 @@ def test(model, test_data, samples=0):
     return None
 
 
-def eval(model, eval_data):
-    return test(model, eval_data, 1)
+def sample_print(samples):
+    for s in samples:
+        s
+        print(f'\t{s}')
+
+def evaluate(model, eval_data):
+    out = test(model, eval_data, 1)
+    sample_print(out)
+    return out
 
 
 def process_epoch(epoch, model: torch.nn.Module, expanded_trainings_data: torch.Tensor, item_count, optimizer=None,
@@ -139,6 +146,8 @@ def train(model: torch.nn.Module, trainings_data: torch.Tensor, input_count, opt
     while epochs:
         process_epoch(itr, model, trainings_data, items, optimizer, log_level, train=True)
         if test_data is not None:
-            test(model, test_data, test_samples)
+            out = test(model, test_data, test_samples)
+            if out is not None:
+                sample_print(out)
         epochs -= 1
         itr += 1
