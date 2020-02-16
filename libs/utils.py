@@ -1,5 +1,5 @@
 from LocAtE.libs import *
-import numpy
+import pandas
 import torch
 import time
 from .config import *
@@ -21,10 +21,15 @@ def get_auto_encoder(feature_list: list, inputs=1):
 def get_dataset(filename):
     global COLLUMN_MEAN
     global COLLUMN_STD
-    ndarray = numpy.loadtxt(filename)
-    tensor = torch.FloatTensor(ndarray).to(device)
-    COLLUMN_STD, COLLUMN_MEAN = torch.std_mean(tensor, 0, keepdim=True)
-    return (tensor - COLLUMN_MEAN) / COLLUMN_STD
+    df = pandas.read_csv(filename)
+    df = df.dropna()
+    ndarray = df.values
+    tensor = torch.DoubleTensor(ndarray).to(device)
+    std, mean = torch.std_mean(tensor, 0, keepdim=True)
+    tensor = (tensor - mean) / std
+    COLLUMN_MEAN = mean
+    COLLUMN_STD = std
+    return tensor.float()
 
 
 def get_item_count(tensor: torch.Tensor, log=True):
@@ -94,7 +99,7 @@ def train_test_eval_split(tensor, test_split=0.2, eval_split=0.1):
 def test(model, test_data, samples=0):
     process_epoch(-1, model, test_data, test_data.size(0), train=False, plot=False, log_level=3)
     if samples:
-        output = model(test_data[:samples+1])
+        output = model(test_data[:samples + 1])
         output = (output * COLLUMN_STD) + COLLUMN_MEAN
         return output
     return None
@@ -102,8 +107,8 @@ def test(model, test_data, samples=0):
 
 def sample_print(samples):
     for s in samples:
-        s
-        print(f'\t{s}')
+        print(f'\t{s.tolist()}')
+
 
 def evaluate(model, eval_data):
     out = test(model, eval_data, 1)
