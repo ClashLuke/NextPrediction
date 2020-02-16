@@ -76,9 +76,18 @@ class History:
 
 DROPOUT = torch.ones((4, 6)).to(device)
 DROPOUT[0, 0] = 0
+DROPOUT[0, 2] = 0
+DROPOUT[0, 3] = 0
+
 DROPOUT[1, 1] = 0
-DROPOUT[2, 2] = 0
-DROPOUT[2, 3] = 0
+DROPOUT[1, 2] = 0
+DROPOUT[1, 3] = 0
+
+DROPOUT[2, 0] = 0
+DROPOUT[2, 4] = 0
+DROPOUT[2, 5] = 0
+
+DROPOUT[3, 1] = 0
 DROPOUT[3, 4] = 0
 DROPOUT[3, 5] = 0
 
