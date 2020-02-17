@@ -6,7 +6,6 @@ import os
 from .config import *
 
 
-
 def lwma(x):
     div = ((MEAN_WINDOW ** 2 - MEAN_WINDOW) / 2)
     return [sum(x[i + j - 1] * j for j in range(1, MEAN_WINDOW + 1)) / div for i in range(len(x) - MEAN_WINDOW)]
@@ -95,7 +94,8 @@ class History:
             os.mkdir(self.plot_folder)
         except OSError:
             pass
-        plot_hist(self.lwma(), f'{self.plot_folder}/{filename}')
+        plot_hist(self.data, f'{self.plot_folder}/raw_{filename}')
+        plot_hist(self.lwma(), f'{self.plot_folder}/lwma_{filename}')
         return None
 
 
@@ -125,8 +125,8 @@ class AutoEncoder:
 
     def print_loss(self):
         print(
-            f"\r[{self.epoch}][{self.working_dataset}/{len(self.dataset.dataset)}] Loss: {self.loss:.4f} | Elapsed: {int(time.time() - self.processing_start)}",
-            end='')
+                f"\r[{self.epoch}][{self.working_dataset}/{len(self.dataset.dataset)}] Loss: {self.loss:.4f} | Elapsed: {int(time.time() - self.processing_start)}",
+                end='')
         return None
 
     def print_parameters(self):
@@ -156,21 +156,25 @@ class AutoEncoder:
         return None
 
     def test(self):
-        self.training = False
-        self.process_epoch(self.dataset.test_dataset, log_level=1)
-        return self.loss_average()
+        return self._processing_wrapper(False, dataset_list=self.dataset.test_dataset, log_level=1)
 
     def evaluate(self):
-        self.training = False
-        self.process_epoch(self.dataset.eval_dataset, log_level=1)
+        return self._processing_wrapper(False, dataset_list=self.dataset.eval_dataset, log_level=1)
+
+    def _processing_wrapper(self, training, **kwargs):
+        self.training = training
+        self.process_epoch(**kwargs)
         return self.loss_average()
 
     def train(self, epochs, samples=0, log_level=1):
         itr = 0
         while epochs:
             self.epoch = itr
-            train_loss = self.process_epoch(self.dataset.dataset, log_level=log_level)
+            self.training = True
+            self.process_epoch(self.dataset.dataset, log_level=log_level)
+            train_loss = self._processing_wrapper(True, dataset_list=self.dataset.dataset, log_level=log_level)
             test_loss = self.test()
+
             self.get_samples(samples, True)
 
             self.train_history.add_item(train_loss)
