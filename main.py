@@ -1,11 +1,13 @@
 from LocAtE.libs import *
 from libs import *
 
-model = get_auto_encoder(FEATURE_LIST, INPUTS)
-dataset = get_dataset('nextbike.csv')
-train_data, test_data, eval_data = train_test_eval_split(dataset)
-model, optimizer = get_model(model, LEARNING_RATE, device)
+model = AutoEncoder(FEATURE_LIST, INPUTS)
+
+model.print_parameters()
 print(model)
-print(f'Parameters: {parameter_count(model)}')
-train(model, train_data, INPUTS, optimizer, test_data=test_data, log_level=1)
-evaluate(model, eval_data)
+
+model.add_datasets('nextbike.csv')
+model.dataset.split()
+
+model.train(-1, 1, 1)
+model.evaluate()

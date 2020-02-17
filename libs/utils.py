@@ -5,51 +5,74 @@ import time
 import os
 from .config import *
 
-COLLUMN_MEAN = []
-COLLUMN_STD = []
 
 
-def get_auto_encoder(feature_list: list, inputs=1):
-    features = feature_list.copy()
-    features.insert(0, 6)
-    features.append(6)
-    block_block = BlockBlock(len(features) - 1, inputs, features, [1] * len(features), False, True, 1)
-    return nn.Sequential(block_block,
-                         nn.BatchNorm1d(6),
-                         FactorizedConvModule(block_block.out_features, 6, inputs, False, 1, 0, 1, dim=1))
+def lwma(x):
+    div = ((MEAN_WINDOW ** 2 - MEAN_WINDOW) / 2)
+    return [sum(x[i + j - 1] * j for j in range(1, MEAN_WINDOW + 1)) / div for i in range(len(x) - MEAN_WINDOW)]
 
 
-def get_dataset(filename):
-    global COLLUMN_MEAN
-    global COLLUMN_STD
-    df = pandas.read_csv(filename)
-    df = df.dropna()
-    ndarray = df.values
-    tensor = torch.DoubleTensor(ndarray).to(device)
-    std, mean = torch.std_mean(tensor, 0, keepdim=True)
-    tensor = (tensor - mean) / std
-    COLLUMN_MEAN = mean
-    COLLUMN_STD = std
-    return tensor.float()
+class Dataset:
+    def __init__(self):
+        self.mean = 0
+        self.std = 1
+        self.dataset = []
+        self.test_dataset = []
+        self.eval_dataset = []
+        self.dropout_mask = torch.ones((1, 6))
 
+    def get_dropout_mask(self, *args):
+        item_counts = [len(a) for a in args]
+        arg_count = len(args)
+        dropout = torch.ones((prod(item_counts), 6)).to(device)
+        for i in range(max(item_counts)):
+            items = [args[idx % item_counts[i]] for idx in range(arg_count)]
+            dropout[i, items] = 0
+        self.dropout_mask = dropout
+        return None
 
-def get_item_count(tensor: torch.Tensor, log=True):
-    item_count = tensor.size(0)
-    if log:
-        print(f"Items: {item_count}")
-    return item_count
+    def dropout(self, item):
+        random_vector = torch.randint(0, self.dropout_mask.size(0), (item.size(0), item.size(2)))
+        return self.dropout_mask[random_vector].transpose(1, 2) * item
 
+    def items(self):
+        return sum([i.size(0) for i in self.dataset])
 
-def expand_depth(tensor, target_depth):
-    items = get_item_count(tensor, False) - target_depth
-    return torch.stack([tensor[i:i + target_depth] for i in range(items)], dim=0).transpose(1, 2)
+    def split(self, test_split=0.2, eval_split=0.1):
+        for i, d in enumerate(self.dataset):
+            items = d.size(0)
+            test_items = int(items * test_split)
+            eval_items = int(items * eval_split)
+            train_items = items - test_items - eval_items
+            self.test_dataset.append(d[train_items:-eval_items])
+            self.eval_dataset.append(d[-eval_items:])
+            self.dataset[i] = d[:train_items]
 
+    def expand(self, target_depth):
+        for idx in range(len(self.dataset)):
+            items = self.dataset[idx].size(0) - target_depth
+            self.dataset[idx] = torch.stack([self.dataset[idx][i:i + target_depth] for i in range(items)],
+                                            dim=0).transpose(1, 2)
 
-def print_loss(epoch, itr, pad, item_count, loss, start_time, log=True):
-    if log:
-        print(f"\r[{epoch}][{itr:{pad}d}/{item_count}] Loss: {loss:.4f} | Elapsed: {int(time.time() - start_time)}",
-              end='')
-    return None
+    def add(self, filename):
+        df = pandas.read_csv(filename)
+        df = df.dropna()
+        ndarray = df.values
+
+        tensor = torch.DoubleTensor(ndarray).to(device)
+        std, mean = torch.std_mean(tensor, 0, keepdim=True)
+        tensor = (tensor - mean) / std
+
+        prev_items = self.items()
+        new_items = tensor.size(0)
+
+        self.mean = (self.mean * prev_items + mean * new_items) / (prev_items + new_items)
+        self.std = (self.std * prev_items + std * new_items) / (prev_items + new_items)
+
+        tensor = tensor.float()
+
+        self.dataset.append(tensor)
+        return None
 
 
 class History:
@@ -59,134 +82,122 @@ class History:
         self.plot_folder = plot_folder
 
     def add_item(self, item):
-        if self.record:
-            self.data.append(item)
+        self.data.append(item)
 
     def average(self):
-        return sum(self.data)/len(self.data)
+        return sum(self.data) / len(self.data)
 
     def lwma(self):
         return lwma(self.data)
 
-    def plot(self, filename, plot=True):
+    def plot(self, filename):
         try:
             os.mkdir(self.plot_folder)
         except OSError:
             pass
-        if self.record:
-            if plot:
-                plot_hist(self.lwma, f'{self.plot_folder}/{filename}')
-            print(f" | Average: {self.average():.4f}")
+        plot_hist(self.lwma(), f'{self.plot_folder}/{filename}')
+        return None
+
+
+class AutoEncoder:
+    def __init__(self, feature_list: list, inputs=1):
+        features = feature_list.copy()
+        features.insert(0, 6)
+        features.append(6)
+        block_block = BlockBlock(len(features) - 1, inputs, features, [1] * len(features), False, True, 1)
+
+        self.model = nn.Sequential(block_block, nn.BatchNorm1d(6),
+                                   FactorizedConvModule(block_block.out_features, 6, inputs, False, 1, 0, 1, dim=1))
+        self.model, self.optimizer = get_model(self.model, LEARNING_RATE, device)
+        self.dataset = Dataset()
+
+        self.train_history = History(True, 'plots')
+        self.test_history = History(True, 'plots')
+        self.inputs = inputs
+
+        self.training = True
+        self.epoch = 0
+        self.loss = 0
+        self.processing_start = 0
+        self.working_dataset = 0
+        self.samples = []
+
+    def print_loss(self):
+        print(
+            f"\r[{self.epoch}][{self.working_dataset}/{len(self.dataset.dataset)}] Loss: {self.loss:.4f} | Elapsed: {int(time.time() - self.processing_start)}",
+            end='')
+        return None
+
+    def print_parameters(self):
+        print(f"Parameters: {parameter_count(self.model)}")
+
+    def print_samples(self):
+        for s in self.samples:
+            print(f'\t{s.tolist()}')
+
+    def get_samples(self, samples, print_samples=False):
+        if samples:
+            output = self.model(self.dataset.test_dataset[0][:samples + 1])
+            output = (output * self.dataset.std) + self.dataset.mean
+            if print_samples:
+                self.print_samples()
+            return output
         else:
-            print('')
+            return None
 
+    def add_datasets(self, *datasets):
+        for d in datasets:
+            self.dataset.add(d)
+        self.dataset.expand(self.inputs)
+        return None
 
-DROPOUT = torch.ones((4, 6)).to(device)
-DROPOUT[0, 0] = 0
-DROPOUT[0, 2] = 0
-DROPOUT[0, 3] = 0
+    def test(self):
+        self.training = False
+        return self.process_epoch(self.dataset.test_dataset, log_level=1)
 
-DROPOUT[1, 1] = 0
-DROPOUT[1, 2] = 0
-DROPOUT[1, 3] = 0
+    def evaluate(self):
+        self.training = False
+        return self.process_epoch(self.dataset.eval_dataset, log_level=1)
 
-DROPOUT[2, 0] = 0
-DROPOUT[2, 4] = 0
-DROPOUT[2, 5] = 0
+    def train(self, epochs, samples=0, log_level=1):
+        itr = 0
+        while epochs:
+            self.epoch = itr
+            train_loss = self.process_epoch(self.dataset.dataset, log_level=log_level)
+            test_loss = self.test()
+            self.get_samples(samples, True)
 
-DROPOUT[3, 1] = 0
-DROPOUT[3, 4] = 0
-DROPOUT[3, 5] = 0
+            self.train_history.add_item(train_loss)
+            self.train_history.plot('train.svg')
+            self.test_history.add_item(test_loss)
+            self.test_history.plot('test.svg')
 
+            epochs -= 1
+            itr += 1
 
-def get_dropped_out_data(data: torch.Tensor):
-    random_vector = torch.randint(0, 4, (data.size(0), data.size(2)))
-    return data * DROPOUT[random_vector].transpose(1, 2)
+    def process_epoch(self, dataset_list, log_level=2):
+        log_loss = log_level >= 2
+        loss_history = History(log_level >= 1, 'error')
+        for d in dataset_list:
+            self.processing_start = time.time()
+            self.working_dataset += 1
+            for i in range(0, d.size(0) - BATCH_SIZE, BATCH_SIZE):
+                target = d[i:i + BATCH_SIZE]
+                source = self.dataset.dropout(target)
+                model_out = self.model(source)
+                loss = (model_out - target).abs()
+                loss = loss.mean()
+                if self.training:
+                    loss.backward()
+                    self.optimizer.step()
+                self.loss = loss.item()
+                loss_history.add_item(loss)
+            if log_loss:
+                self.print_loss()
+        self.working_dataset = 0
+        if log_level:
+            return loss_history.average()
+        return None
 
-
-def lwma(x):
-    div = ((MEAN_WINDOW ** 2 - MEAN_WINDOW) / 2)
-    return [sum(x[i + j - 1] * j for j in range(1, MEAN_WINDOW + 1)) / div for i in range(len(x) - MEAN_WINDOW)]
-
-
-def train_test_eval_split(tensor, test_split=0.2, eval_split=0.1):
-    items = tensor.size(0)
-    test_items = int(items * test_split)
-    eval_items = int(items * eval_split)
-    train_end = test_items + eval_items
-    return tensor[:-train_end], tensor[-train_end:-eval_items], tensor[-eval_items:]
-
-
-def test(model, test_data, samples=0, print_samples=True):
-    loss = process_epoch(-1, model, test_data, test_data.size(0), train=False, plot=False, log_level=1)
-    if samples:
-        output = model(test_data[:samples + 1])
-        output = (output * COLLUMN_STD) + COLLUMN_MEAN
-        if print_samples:
-            sample_print(output)
-        else:
-            return loss, output
-    return loss, None
-
-
-def sample_print(samples):
-    for s in samples:
-        print(f'\t{s.tolist()}')
-
-
-def evaluate(model, eval_data):
-    loss, out = test(model, eval_data, 1)
-    sample_print(out)
-    return loss
-
-
-def process_epoch(epoch, model: torch.nn.Module, expanded_trainings_data: torch.Tensor, item_count, optimizer=None,
-                  log_level=2, train=True, plot=True):
-    log_loss = log_level >= 2
-    loss_history = History(log_level >= 1, 'error')
-    start_time = time.time()
-    item_count_len = len(str(item_count))
-    loss = -1
-    i = -1
-    for i in range(0, item_count - BATCH_SIZE, BATCH_SIZE):
-        target = expanded_trainings_data[i:i + BATCH_SIZE]
-        source = get_dropped_out_data(target)
-        model_out = model(source)
-        loss = (model_out - target).abs()
-        loss = loss.mean()
-        if train:
-            loss.backward()
-            optimizer.step()
-        loss = loss.item()
-        print_loss(epoch, i, item_count_len, item_count, loss, start_time, log_loss)
-        loss_history.add_item(loss)
-    print_loss(epoch, i, item_count_len, item_count, loss, start_time, log_level >= 1)
-    loss_history.plot(f'loss_{epoch}.svg', plot=plot)
-    if log_level:
-        return loss_history.average()
-    return None
-
-
-def train(model: torch.nn.Module, trainings_data: torch.Tensor, input_count, optimizer, test_data=None, epochs=-1,
-          log_level=2, test_samples=1):
-    trainings_data = expand_depth(trainings_data, input_count)
-    if test_data is not None:
-        test_data = expand_depth(test_data, input_count)
-    items = get_item_count(trainings_data, log_level >= 2)
-    itr = 0
-    train_history = History(bool(log_level), '')
-    test_history = History(bool(log_level), 'plots')
-    while epochs:
-        train_loss = process_epoch(itr, model, trainings_data, items, optimizer, log_level, train=True)
-        if test_data is not None:
-            test_loss, out = test(model, test_data, test_samples)
-            if out is not None:
-                sample_print(out)
-        else:
-            test_loss = -1
-        train_history.add_item(train_loss)
-        train_history.plot('train.svg')
-        test_history.add_item(test_loss)
-        test_history.plot('test.svg')
-        epochs -= 1
-        itr += 1
+    def __str__(self):
+        return str(self.model)
