@@ -1,9 +1,22 @@
 # NextPrediction
+[![BCH compliance](https://bettercodehub.com/edge/badge/ClashLuke/NextPrediction?branch=master)](https://bettercodehub.com/)
 An API providing metadata of the future.
 
 ## Structure
-
-
+* [**Components**](#components)
+* [**Design**](#design)
+* [**Repository**](#repository)
+* [**Method**](#method)
+  * [*Data preparation*](#data-preparation)
+  * [*Input and target*](#input-and-target)
+  * [*Train test eval*](#train-test-eval)
+* [**Performance**](#performance)
+* [**Application**](#application)
+* [**Connection to existing projects**](#connection-to-existing-projects)
+  * [*NextBike*](#nextbike)
+  * [*Jelbi*](#Jelbi)
+  * [*Swobbee*](#Swobbee)
+ 
 ## Components
 1. **Predictions**: of user-behaviour, accessible under the same license as the source data.
 2. **Extendability**: with any other data, such as user_id, bike_id or the operators favorite_colour.
@@ -48,7 +61,7 @@ or end time as well as only one location. Therefore four input permutations
 are zero-centric with a std of one, we use the absolute distance between target and output as a measurement of
 performance. 
 
-### Train, test, eval
+### Train test eval
 Instead of training on the entire dataset, we first split of 20% for testing during the training and another 10% for
 evaluation after the training has finished.\
 We then train one epoch on the training dataset, which is directly followed by a testing phase, on the entire testing
@@ -64,7 +77,7 @@ With less than 0.68 average error after training the model for half an hour on a
 convergence is fast and the results are powerful. However, while still having visible convergence, they aren't close to 
 good enough for production-level accuracy. That's why a testing environment using a jupyter notebook on colaboratory
 with 17 million parameters was deployed, yielding similar results in minutes.\
-The best raw performance achieved, with less than an hour of training on CPU, is an incredible 0.52. With this accuracy, 
+The best raw performance achieved, with two hours of training on CPU, is an incredible 0.47. With this accuracy, 
 predictions can not just be made but also relied on.
 
 ## Application
