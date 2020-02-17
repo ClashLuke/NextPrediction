@@ -53,23 +53,30 @@ def print_loss(epoch, itr, pad, item_count, loss, start_time, log=True):
 
 
 class History:
-    def __init__(self, record):
+    def __init__(self, record, plot_folder):
         self.data = []
         self.record = record
+        self.plot_folder = plot_folder
 
     def add_item(self, item):
         if self.record:
             self.data.append(item)
 
+    def average(self):
+        return sum(self.data)/len(self.data)
+
+    def lwma(self):
+        return lwma(self.data)
+
     def plot(self, filename, plot=True):
         try:
-            os.mkdir('error_plots')
+            os.mkdir(self.plot_folder)
         except OSError:
             pass
         if self.record:
             if plot:
-                plot_hist(lwma(self.data), f'error_plots/{filename}')
-            print(f" | Average: {sum(self.data) / len(self.data):.4f}")
+                plot_hist(self.lwma, f'{self.plot_folder}/{filename}')
+            print(f" | Average: {self.average():.4f}")
         else:
             print('')
 
@@ -110,13 +117,16 @@ def train_test_eval_split(tensor, test_split=0.2, eval_split=0.1):
     return tensor[:-train_end], tensor[-train_end:-eval_items], tensor[-eval_items:]
 
 
-def test(model, test_data, samples=0):
-    process_epoch(-1, model, test_data, test_data.size(0), train=False, plot=False, log_level=3)
+def test(model, test_data, samples=0, print_samples=True):
+    loss = process_epoch(-1, model, test_data, test_data.size(0), train=False, plot=False, log_level=1)
     if samples:
         output = model(test_data[:samples + 1])
         output = (output * COLLUMN_STD) + COLLUMN_MEAN
-        return output
-    return None
+        if print_samples:
+            sample_print(output)
+        else:
+            return loss, output
+    return loss, None
 
 
 def sample_print(samples):
@@ -125,15 +135,15 @@ def sample_print(samples):
 
 
 def evaluate(model, eval_data):
-    out = test(model, eval_data, 1)
+    loss, out = test(model, eval_data, 1)
     sample_print(out)
-    return out
+    return loss
 
 
 def process_epoch(epoch, model: torch.nn.Module, expanded_trainings_data: torch.Tensor, item_count, optimizer=None,
                   log_level=2, train=True, plot=True):
     log_loss = log_level >= 2
-    loss_history = History(log_level >= 3)
+    loss_history = History(log_level >= 1, 'error')
     start_time = time.time()
     item_count_len = len(str(item_count))
     loss = -1
@@ -152,6 +162,8 @@ def process_epoch(epoch, model: torch.nn.Module, expanded_trainings_data: torch.
         loss_history.add_item(loss)
     print_loss(epoch, i, item_count_len, item_count, loss, start_time, log_level >= 1)
     loss_history.plot(f'loss_{epoch}.svg', plot=plot)
+    if log_level:
+        return loss_history.average()
     return None
 
 
@@ -162,11 +174,19 @@ def train(model: torch.nn.Module, trainings_data: torch.Tensor, input_count, opt
         test_data = expand_depth(test_data, input_count)
     items = get_item_count(trainings_data, log_level >= 2)
     itr = 0
+    train_history = History(bool(log_level), '')
+    test_history = History(bool(log_level), 'plots')
     while epochs:
-        process_epoch(itr, model, trainings_data, items, optimizer, log_level, train=True)
+        train_loss = process_epoch(itr, model, trainings_data, items, optimizer, log_level, train=True)
         if test_data is not None:
-            out = test(model, test_data, test_samples)
+            test_loss, out = test(model, test_data, test_samples)
             if out is not None:
                 sample_print(out)
+        else:
+            test_loss = -1
+        train_history.add_item(train_loss)
+        train_history.plot('train.svg')
+        test_history.add_item(test_loss)
+        test_history.plot('test.svg')
         epochs -= 1
         itr += 1
