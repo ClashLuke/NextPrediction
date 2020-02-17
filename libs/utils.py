@@ -23,9 +23,11 @@ class Dataset:
     def get_dropout_mask(self, *args):
         item_counts = [len(a) for a in args]
         arg_count = len(args)
-        dropout = torch.ones((prod(item_counts), 6)).to(device)
-        for i in range(max(item_counts)):
-            items = [args[idx % item_counts[i]] for idx in range(arg_count)]
+        total_item_count = prod(item_counts)
+        dropout = torch.ones((total_item_count, 6)).to(device)
+        for i in range(total_item_count):
+            items = [args[idx][i % item_counts[idx]] for idx in range(arg_count)]
+            items = list(flatten(items))
             dropout[i, items] = 0
         self.dropout_mask = dropout
         return None
@@ -154,6 +156,9 @@ class AutoEncoder:
             self.dataset.add(d)
         self.dataset.expand(self.inputs)
         return None
+
+    def add_mask(self, *args):
+        return self.dataset.get_dropout_mask(*args)
 
     def test(self):
         return self._processing_wrapper(False, dataset_list=self.dataset.test_dataset, log_level=1)
