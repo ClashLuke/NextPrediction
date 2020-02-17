@@ -121,6 +121,7 @@ class AutoEncoder:
         self.processing_start = 0
         self.working_dataset = 0
         self.samples = []
+        self.intraepoch_averages = []
 
     def print_loss(self):
         print(
@@ -134,6 +135,9 @@ class AutoEncoder:
     def print_samples(self):
         for s in self.samples:
             print(f'\t{s.tolist()}')
+
+    def loss_average(self):
+        return sum(self.intraepoch_averages) / len(self.intraepoch_averages)
 
     def get_samples(self, samples, print_samples=False):
         if samples:
@@ -153,11 +157,13 @@ class AutoEncoder:
 
     def test(self):
         self.training = False
-        return self.process_epoch(self.dataset.test_dataset, log_level=1)
+        self.process_epoch(self.dataset.test_dataset, log_level=1)
+        return self.loss_average()
 
     def evaluate(self):
         self.training = False
-        return self.process_epoch(self.dataset.eval_dataset, log_level=1)
+        self.process_epoch(self.dataset.eval_dataset, log_level=1)
+        return self.loss_average()
 
     def train(self, epochs, samples=0, log_level=1):
         itr = 0
@@ -175,28 +181,32 @@ class AutoEncoder:
             epochs -= 1
             itr += 1
 
+    def process_dataset(self, dataset, log_level=2):
+        loss_history = History(log_level >= 1, 'error')
+        for i in range(0, dataset.size(0) - BATCH_SIZE, BATCH_SIZE):
+            target = dataset[i:i + BATCH_SIZE]
+            source = self.dataset.dropout(target)
+            model_out = self.model(source)
+            loss = (model_out - target).abs()
+            loss = loss.mean()
+            if self.training:
+                loss.backward()
+                self.optimizer.step()
+            self.loss = loss.item()
+            loss_history.add_item(loss)
+        return loss_history
+
     def process_epoch(self, dataset_list, log_level=2):
         log_loss = log_level >= 2
-        loss_history = History(log_level >= 1, 'error')
+        self.intraepoch_averages = []
         for d in dataset_list:
             self.processing_start = time.time()
             self.working_dataset += 1
-            for i in range(0, d.size(0) - BATCH_SIZE, BATCH_SIZE):
-                target = d[i:i + BATCH_SIZE]
-                source = self.dataset.dropout(target)
-                model_out = self.model(source)
-                loss = (model_out - target).abs()
-                loss = loss.mean()
-                if self.training:
-                    loss.backward()
-                    self.optimizer.step()
-                self.loss = loss.item()
-                loss_history.add_item(loss)
+            loss_history = self.process_dataset(d, log_level)
+            self.intraepoch_averages.append(loss_history.average())
             if log_loss:
                 self.print_loss()
         self.working_dataset = 0
-        if log_level:
-            return loss_history.average()
         return None
 
     def __str__(self):
