@@ -1,4 +1,5 @@
 # NextPrediction
+[![BCH compliance](https://bettercodehub.com/edge/badge/ClashLuke/NextPrediction?branch=master)](https://bettercodehub.com/)
 An API providing metadata of the future.
 
 ## Structure
