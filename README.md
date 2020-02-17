@@ -1,8 +1,8 @@
 # NextPrediction
-[![BCH compliance](https://bettercodehub.com/edge/badge/ClashLuke/NextPrediction?branch=master)](https://bettercodehub.com/)
 An API providing metadata of the future.
 
 ## Structure
+* [**Coverage**](#coverage)
 * [**Components**](#components)
 * [**Design**](#design)
 * [**Repository**](#repository)
@@ -16,6 +16,13 @@ An API providing metadata of the future.
   * [*NextBike*](#nextbike)
   * [*Jelbi*](#Jelbi)
   * [*Swobbee*](#Swobbee)
+ 
+## Coverage
+ | Type | Status |
+ | --- | --- |
+ | Readability | [![BCH compliance](https://bettercodehub.com/edge/badge/ClashLuke/NextPrediction?branch=master)](https://bettercodehub.com/) |
+
+ 
  
 ## Components
 1. **Predictions**: of user-behaviour, accessible under the same license as the source data.
