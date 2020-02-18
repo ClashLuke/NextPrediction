@@ -1,3 +1,5 @@
+import os
+
 from LocAtE.libs import plot_hist
 
 
