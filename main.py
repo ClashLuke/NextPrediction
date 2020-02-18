@@ -1,4 +1,4 @@
-from libs import *
+from python_api import *
 
 inputs = 1
 feature_list = [6 * 16] * 2

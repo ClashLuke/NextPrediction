@@ -5,8 +5,6 @@ import pandas
 import torch
 
 from LocAtE.libs import *
-from .config import *
-
 
 class Dataset:
     def __init__(self):
@@ -169,7 +167,7 @@ class AutoEncoder:
             raise UserWarning("No batch size given.")
 
         if isinstance(batch_size, int):
-            self.batch_size_generator = lambda x: int
+            self.batch_size_generator = lambda x: batch_size
         elif isinstance(batch_size, type(self.__init__)):
             self.batch_size_generator = lambda x: batch_size(x)
         elif isinstance(batch_size, list):
