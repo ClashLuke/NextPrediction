@@ -33,7 +33,9 @@ class AutoEncoder(ModelAPI):
         for sample in self.samples:
             print(f'\t{sample.tolist()}')
 
-    def get_samples(self, samples, print_samples=False):
+    def get_samples(self, samples, print_samples=False, *args, **kwargs):
+        if args or kwargs:
+            print(f"Unknown arguments: {args}, Keyword Arguments: {kwargs}")
         output = self.model(self.dataset.test_dataset[0][:samples + 1])
         output = (output * self.dataset.std) + self.dataset.mean
         if print_samples:

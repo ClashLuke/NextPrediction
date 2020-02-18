@@ -1,4 +1,4 @@
-from LocAtE.libs import *
+from LocAtE.libs import plot_hist
 
 
 class History:
