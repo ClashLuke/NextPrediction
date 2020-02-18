@@ -3,6 +3,6 @@ exclude_patterns = [ "*.csv", "*.svg" ]
 
 [[analyzers]]
 name = "python"
-enabled = tru
+enabled = true
     [analyzers.meta]
     runtime_version = "3.x.x" 
