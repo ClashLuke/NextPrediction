@@ -13,5 +13,5 @@ model.dataset.split()
 model.add_mask([0, 1], [[2, 3], [4, 5]])
 
 model.add_batch_size_schedule(4096)
-model.train(-1, 1, 1)
+model.train(-1, 1)
 model.evaluate()

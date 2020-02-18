@@ -1,5 +1,3 @@
-import time
-
 from .dataset import *
 from .model_api import *
 from .history import *
@@ -11,9 +9,8 @@ class AutoEncoder(ModelAPI):
         features = feature_list.copy()
         features.insert(0, 6)
         features.append(6)
-        block_block = BlockBlock(len(features) - 1, inputs, features, [1] * len(features), False, True, 1)
 
-        self.model = block_block
+        self.model = BlockBlock(len(features) - 1, inputs, features, [1] * len(features), False, True, 1)
         self.model, self.optimizer = get_model(self.model, learning_rate, device)
         self.parameters = parameter_count(self.model)
         self.dataset = Dataset()
@@ -26,9 +23,7 @@ class AutoEncoder(ModelAPI):
         self.batch_size_generator = lambda x: None
 
     def print_loss(self):
-        print(
-                f"\r[{self.epoch}][{self.working_dataset}/{len(self.dataset.dataset)}] Loss: {self.loss:.4f} | Elapsed: {int(time.time() - self.processing_start)}",
-                end='')
+        print(f"[{self.epoch}][{self.working_dataset}/{len(self.dataset.dataset)}] Loss: {self.loss:.4f} | Elapsed: {int(time.time() - self.processing_start)}")
         return None
 
     def print_samples(self):

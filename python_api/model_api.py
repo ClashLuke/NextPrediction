@@ -11,6 +11,7 @@ class ModelAPI:
         self.lwma_window = 16
         self.epoch = 0
         self.working_dataset = 0
+        self.log_level = 2
         self.training = True
         self.test_history = []
         self.train_history = []
@@ -18,32 +19,40 @@ class ModelAPI:
         self.batch_size_generator = None
         self.model = None
         self.optimizer = None
-        self.print_loss = None
 
-    def get_samples(self):
+    def get_samples(self, samples, print_samples):
+        raise UserWarning("Has to be overwritten by child classes")
+
+    def print_loss(self):
         raise UserWarning("Has to be overwritten by child classes")
 
     def loss_average(self):
         return sum(self.intraepoch_averages) / len(self.intraepoch_averages)
 
     def test(self):
-        return self._processing_wrapper(False, dataset_list=self.dataset.test_dataset, log_level=1)
+        return self._processing_wrapper(False, dataset_list=self.dataset.test_dataset)
 
     def evaluate(self):
-        return self._processing_wrapper(False, dataset_list=self.dataset.eval_dataset, log_level=1)
+        return self._processing_wrapper(False, dataset_list=self.dataset.eval_dataset)
 
     def _processing_wrapper(self, training, **kwargs):
         self.training = training
+        log_level = self.log_level
+        if not training:
+            self.log_level = 1
         self.process_epoch(**kwargs)
-        return self.loss_average()
+        if self.log_level >= 1:
+            self.log_level = log_level
+            return self.loss_average()
+        return None
 
-    def train(self, epochs, samples=0, log_level=1):
+    def train(self, epochs, samples=0):
         itr = 0
         while epochs:
             self.epoch = itr
             self.training = True
-            self.process_epoch(self.dataset.dataset, log_level=log_level)
-            train_loss = self._processing_wrapper(True, dataset_list=self.dataset.dataset, log_level=log_level)
+            self.process_epoch(self.dataset.dataset)
+            train_loss = self._processing_wrapper(True, dataset_list=self.dataset.dataset)
             test_loss = self.test()
 
             self.get_samples(samples, True)
@@ -56,8 +65,8 @@ class ModelAPI:
             epochs -= 1
             itr += 1
 
-    def process_dataset(self, dataset, log_level=2):
-        loss_history = History(log_level >= 1, 'error')
+    def process_dataset(self, dataset):
+        loss_history = History(self.log_level >= 1, 'error')
         batch_size = self.batch_size_generator(self.epoch)
         for i in range(0, dataset.size(0) - batch_size, batch_size):
             target = dataset[i:i + batch_size]
@@ -73,12 +82,12 @@ class ModelAPI:
             self.loss = loss
         return loss_history
 
-    def process_epoch(self, dataset_list, log_level=2):
-        log_loss = log_level >= 2
+    def process_epoch(self, dataset_list):
+        log_loss = self.log_level >= 2
         for d in dataset_list:
             self.processing_start = time.time()
             self.working_dataset += 1
-            loss_history = self.process_dataset(d, log_level)
+            loss_history = self.process_dataset(d)
             self.intraepoch_averages.append(loss_history.average())
             if log_loss:
                 self.print_loss()
