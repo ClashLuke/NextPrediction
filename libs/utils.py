@@ -7,7 +7,7 @@ from .config import *
 
 
 def lwma(x):
-    div = ((MEAN_WINDOW ** 2 - MEAN_WINDOW) / 2)
+    div = ((MEAN_WINDOW ** 2 + MEAN_WINDOW) / 2)
     return [sum(x[i + j - 1] * j for j in range(1, MEAN_WINDOW + 1)) / div for i in range(len(x) - MEAN_WINDOW)]
 
 
