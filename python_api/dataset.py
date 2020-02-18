@@ -1,6 +1,7 @@
 import pandas
+import torch
 
-from LocAtE.libs import *
+from LocAtE.libs import device, flatten, prod
 
 
 class Dataset:
@@ -22,47 +23,48 @@ class Dataset:
             items = list(flatten(items))
             dropout[i, items] = 0
         self.dropout_mask = dropout
-        return None
 
     def dropout(self, item):
-        random_vector = torch.randint(0, self.dropout_mask.size(0), (item.size(0), item.size(2)))
+        random_vector = torch.randint(0, self.dropout_mask.size(0),
+                                      (item.size(0), item.size(2)))
         return self.dropout_mask[random_vector].transpose(1, 2) * item
 
     def items(self):
-        return sum([i.size(0) for i in self.dataset])
+        return sum(i.size(0) for i in self.dataset)
 
     def split(self, test_split=0.2, eval_split=0.1):
-        for i, d in enumerate(self.dataset):
+        for i, dataset in enumerate(self.dataset):
             items = d.size(0)
             test_items = int(items * test_split)
             eval_items = int(items * eval_split)
             train_items = items - test_items - eval_items
-            self.test_dataset.append(d[train_items:-eval_items])
-            self.eval_dataset.append(d[-eval_items:])
-            self.dataset[i] = d[:train_items]
+            self.test_dataset.append(dataset[train_items:-eval_items])
+            self.eval_dataset.append(dataset[-eval_items:])
+            self.dataset[i] = dataset[:train_items]
 
     def expand(self, target_depth):
         for idx in range(len(self.dataset)):
             items = self.dataset[idx].size(0) - target_depth
-            self.dataset[idx] = torch.stack([self.dataset[idx][i:i + target_depth] for i in range(items)],
-                                            dim=0).transpose(1, 2)
+            self.dataset[idx] = torch.stack(
+                    [self.dataset[idx][i:i + target_depth] for i in range(items)],
+                    dim=0).transpose(1, 2)
 
     def add(self, filename):
-        df = pandas.read_csv(filename)
-        df = df.dropna()
-        ndarray = df.values
+        data_frame = pandas.read_csv(filename)
+        data_frame = data_frame.dropna()
+        numpy_array = data_frame.values
 
-        tensor = torch.DoubleTensor(ndarray).to(device)
+        tensor = torch.DoubleTensor(numpy_array).to(device)
         std, mean = torch.std_mean(tensor, 0, keepdim=True)
         tensor = (tensor - mean) / std
 
         prev_items = self.items()
         new_items = tensor.size(0)
 
-        self.mean = (self.mean * prev_items + mean * new_items) / (prev_items + new_items)
+        self.mean = (self.mean * prev_items + mean * new_items) / (
+                prev_items + new_items)
         self.std = (self.std * prev_items + std * new_items) / (prev_items + new_items)
 
         tensor = tensor.float()
 
         self.dataset.append(tensor)
-        return None

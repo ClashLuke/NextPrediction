@@ -1,6 +1,8 @@
-from .dataset import *
-from .model_api import *
-from .history import *
+import time
+
+from LocAtE.libs import BlockBlock, device, get_model, parameter_count
+from .dataset import Dataset
+from .model_api import ModelAPI
 
 
 class AutoEncoder(ModelAPI):
@@ -10,25 +12,26 @@ class AutoEncoder(ModelAPI):
         features.insert(0, 6)
         features.append(6)
 
-        self.model = BlockBlock(len(features) - 1, inputs, features, [1] * len(features), False, True, 1)
+        self.model = BlockBlock(len(features) - 1, inputs, features,
+                                [1] * len(features), False, True, 1)
         self.model, self.optimizer = get_model(self.model, learning_rate, device)
         self.parameters = parameter_count(self.model)
         self.dataset = Dataset()
 
-        self.train_history = History(True, 'plots')
-        self.test_history = History(True, 'plots')
         self.inputs = inputs
 
         self.samples = []
         self.batch_size_generator = lambda x: None
 
     def print_loss(self):
-        print(f"[{self.epoch}][{self.working_dataset}/{len(self.dataset.dataset)}] Loss: {self.loss:.4f} | Elapsed: {int(time.time() - self.processing_start)}")
-        return None
+        print(
+                f"[{self.epoch}][{self.working_dataset}/{len(self.dataset.dataset)}] "
+                f"Loss: {self.loss:.4f} | Elapsed:"
+                f" {int(time.time() - self.processing_start)}")
 
     def print_samples(self):
-        for s in self.samples:
-            print(f'\t{s.tolist()}')
+        for sample in self.samples:
+            print(f'\t{sample.tolist()}')
 
     def get_samples(self, samples, print_samples=False):
         if samples:
@@ -37,14 +40,11 @@ class AutoEncoder(ModelAPI):
             if print_samples:
                 self.print_samples()
             return output
-        else:
-            return None
 
     def add_datasets(self, *datasets):
-        for d in datasets:
-            self.dataset.add(d)
+        for file_name in datasets:
+            self.dataset.add(file_name)
         self.dataset.expand(self.inputs)
-        return None
 
     def add_mask(self, *args):
         return self.dataset.get_dropout_mask(*args)
@@ -56,12 +56,14 @@ class AutoEncoder(ModelAPI):
         if isinstance(batch_size, int):
             self.batch_size_generator = lambda x: batch_size
         elif isinstance(batch_size, type(self.__init__)):
-            self.batch_size_generator = lambda x: batch_size(x)
+            self.batch_size_generator = batch_size
         elif isinstance(batch_size, list):
-            l = len(batch_size) - 1
-            self.batch_size_generator = lambda x: batch_size[max(x, l)]
+            batch_size_elements = len(batch_size) - 1
+            self.batch_size_generator = lambda x: batch_size[
+                min(x, batch_size_elements)]
         else:
-            raise UserWarning(f"Unknown type {type(batch_size)} for batch size. Please use int, list or function.")
+            raise UserWarning(f"Type {type(batch_size)} unsupported. Use list, int or "
+                              f"function")
 
     def __str__(self):
         return str(self.model)

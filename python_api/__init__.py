@@ -1,3 +1,4 @@
-from .auto_encoder import *
-from .dataset import *
-from .history import *
+from .auto_encoder import AutoEncoder
+from .dataset import Dataset
+from .history import History
+from .model_api import ModelAPI

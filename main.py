@@ -1,7 +1,7 @@
-from python_api import *
+from python_api import AutoEncoder
 
 inputs = 1
-feature_list = [6 * 16] * 2
+feature_list = [6 * 32] * 2
 
 model = AutoEncoder(feature_list, inputs)
 

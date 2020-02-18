@@ -15,8 +15,8 @@ class History:
 
     def lwma(self, mean_window):
         div = ((mean_window ** 2 + mean_window) / 2)
-        return [sum(self.data[i + j - 1] * j for j in range(1, mean_window + 1)) / div for i in
-                range(len(self.data) - mean_window)]
+        return [sum(self.data[i + j - 1] * j for j in range(1, mean_window + 1)) / div
+                for i in range(len(self.data) - mean_window)]
 
     def plot(self, filename, mean_window):
         try:
@@ -25,4 +25,3 @@ class History:
             pass
         plot_hist(self.data, f'{self.plot_folder}/raw_{filename}')
         plot_hist(self.lwma(mean_window), f'{self.plot_folder}/lwma_{filename}')
-        return None
