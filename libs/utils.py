@@ -111,6 +111,7 @@ class AutoEncoder:
         self.model = nn.Sequential(block_block, nn.BatchNorm1d(6),
                                    FactorizedConvModule(block_block.out_features, 6, inputs, False, 1, 0, 1, dim=1))
         self.model, self.optimizer = get_model(self.model, LEARNING_RATE, device)
+        self.parameters = parameter_count(self.model)
         self.dataset = Dataset()
 
         self.train_history = History(True, 'plots')
@@ -130,9 +131,6 @@ class AutoEncoder:
                 f"\r[{self.epoch}][{self.working_dataset}/{len(self.dataset.dataset)}] Loss: {self.loss:.4f} | Elapsed: {int(time.time() - self.processing_start)}",
                 end='')
         return None
-
-    def print_parameters(self):
-        print(f"Parameters: {parameter_count(self.model)}")
 
     def print_samples(self):
         for s in self.samples:

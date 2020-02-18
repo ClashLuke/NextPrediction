@@ -2,8 +2,8 @@ from libs import *
 
 model = AutoEncoder(FEATURE_LIST, INPUTS)
 
-model.print_parameters()
 print(model)
+print(f'Parameters: {model.parameters}')
 
 model.add_datasets('nextbike.csv')
 model.dataset.split()
