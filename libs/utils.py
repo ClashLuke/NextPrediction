@@ -201,8 +201,9 @@ class AutoEncoder:
             if self.training:
                 loss.backward()
                 self.optimizer.step()
-            self.loss = loss.item()
+            loss = loss.item()
             loss_history.add_item(loss)
+            self.loss = loss
         return loss_history
 
     def process_epoch(self, dataset_list, log_level=2):
