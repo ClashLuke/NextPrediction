@@ -1,14 +1,11 @@
-from LocAtE.libs import *
+import os
+import time
+
 import pandas
 import torch
-import time
-import os
+
+from LocAtE.libs import *
 from .config import *
-
-
-def lwma(x):
-    div = ((MEAN_WINDOW ** 2 + MEAN_WINDOW) / 2)
-    return [sum(x[i + j - 1] * j for j in range(1, MEAN_WINDOW + 1)) / div for i in range(len(x) - MEAN_WINDOW)]
 
 
 class Dataset:
@@ -88,21 +85,22 @@ class History:
     def average(self):
         return sum(self.data) / len(self.data)
 
-    def lwma(self):
-        return lwma(self.data)
+    def lwma(self, mean_window):
+        div = ((mean_window ** 2 + mean_window) / 2)
+        return [sum(self.data[i + j - 1] * j for j in range(1, mean_window + 1)) / div for i in range(len(self.data) - mean_window)]
 
-    def plot(self, filename):
+    def plot(self, filename, mean_window):
         try:
-            os.mkdir(self.plot_folder)
+            os.xmkdir(self.plot_folder)
         except OSError:
             pass
         plot_hist(self.data, f'{self.plot_folder}/raw_{filename}')
-        plot_hist(self.lwma(), f'{self.plot_folder}/lwma_{filename}')
+        plot_hist(self.lwma(mean_window), f'{self.plot_folder}/lwma_{filename}')
         return None
 
 
 class AutoEncoder:
-    def __init__(self, feature_list: list, inputs=1):
+    def __init__(self, feature_list: list, inputs=1, learning_rate=1e-2):
         features = feature_list.copy()
         features.insert(0, 6)
         features.append(6)
@@ -110,10 +108,11 @@ class AutoEncoder:
 
         self.model = nn.Sequential(block_block, nn.BatchNorm1d(6),
                                    FactorizedConvModule(block_block.out_features, 6, inputs, False, 1, 0, 1, dim=1))
-        self.model, self.optimizer = get_model(self.model, LEARNING_RATE, device)
+        self.model, self.optimizer = get_model(self.model, learning_rate, device)
         self.parameters = parameter_count(self.model)
         self.dataset = Dataset()
 
+        self.lwma_window = 16
         self.train_history = History(True, 'plots')
         self.test_history = History(True, 'plots')
         self.inputs = inputs
@@ -125,6 +124,7 @@ class AutoEncoder:
         self.working_dataset = 0
         self.samples = []
         self.intraepoch_averages = []
+        self.batch_size_generator = lambda x: None
 
     def print_loss(self):
         print(
@@ -164,6 +164,20 @@ class AutoEncoder:
     def evaluate(self):
         return self._processing_wrapper(False, dataset_list=self.dataset.eval_dataset, log_level=1)
 
+    def add_batch_size_schedule(self, batch_size=None):
+        if isinstance(batch_size, type(None)):
+            raise UserWarning("No batch size given.")
+
+        if isinstance(batch_size, int):
+            self.batch_size_generator = lambda x: int
+        elif isinstance(batch_size, type(self.__init__)):
+            self.batch_size_generator = lambda x: batch_size(x)
+        elif isinstance(batch_size, list):
+            l = len(batch_size) - 1
+            self.batch_size_generator = lambda x: batch_size[max(x, l)]
+        else:
+            raise UserWarning(f"Unknown type {type(batch_size)} for batch size. Please use int, list or function.")
+
     def _processing_wrapper(self, training, **kwargs):
         self.training = training
         self.process_epoch(**kwargs)
@@ -181,17 +195,18 @@ class AutoEncoder:
             self.get_samples(samples, True)
 
             self.train_history.add_item(train_loss)
-            self.train_history.plot('train.svg')
+            self.train_history.plot('train.svg', self.lwma_window)
             self.test_history.add_item(test_loss)
-            self.test_history.plot('test.svg')
+            self.test_history.plot('test.svg', self.lwma_window)
 
             epochs -= 1
             itr += 1
 
     def process_dataset(self, dataset, log_level=2):
         loss_history = History(log_level >= 1, 'error')
-        for i in range(0, dataset.size(0) - BATCH_SIZE, BATCH_SIZE):
-            target = dataset[i:i + BATCH_SIZE]
+        batch_size = self.batch_size_generator(self.epoch)
+        for i in range(0, dataset.size(0) - batch_size, batch_size):
+            target = dataset[i:i + batch_size]
             source = self.dataset.dropout(target)
             model_out = self.model(source)
             loss = (model_out - target).abs()
