@@ -89,7 +89,7 @@ class History:
 
     def plot(self, filename, mean_window):
         try:
-            os.xmkdir(self.plot_folder)
+            os.mkdir(self.plot_folder)
         except OSError:
             pass
         plot_hist(self.data, f'{self.plot_folder}/raw_{filename}')
