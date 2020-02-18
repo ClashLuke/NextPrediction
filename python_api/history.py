@@ -1,6 +1,6 @@
 import os
 
-from LocAtE.libs import plot_hist
+from .LocAtE.libs import plot_hist
 
 
 class History:

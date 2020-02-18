@@ -1,6 +1,6 @@
 import time
 
-from LocAtE.libs import BlockBlock, device, get_model, parameter_count
+from .LocAtE.libs import BlockBlock, device, get_model, parameter_count
 from .dataset import Dataset
 from .model_api import ModelAPI
 

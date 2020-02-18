@@ -1,7 +1,7 @@
 import pandas
 import torch
 
-from LocAtE.libs import device, flatten, prod
+from .LocAtE.libs import device, flatten, prod
 
 
 class Dataset:
