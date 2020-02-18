@@ -15,6 +15,7 @@ class ModelAPI:
         self.training = True
         self.train_history = History(True, 'plots')
         self.test_history = History(True, 'plots')
+        self.samples = True
         self.dataset = None
         self.batch_size_generator = lambda x: 128 * (x + 1)
         self.model = lambda x: x
@@ -46,6 +47,7 @@ class ModelAPI:
         if self.log_level >= 1:
             self.log_level = log_level
             return self.loss_average()
+        return -1
 
     def train(self, epochs, samples=0):
         itr = 0
@@ -57,7 +59,8 @@ class ModelAPI:
                                                   dataset_list=self.dataset.dataset)
             test_loss = self.test()
 
-            self.get_samples(samples, True)
+            if self.samples:
+                self.get_samples(samples, True)
 
             self.train_history.add_item(train_loss)
             self.train_history.plot('train.svg', self.lwma_window)

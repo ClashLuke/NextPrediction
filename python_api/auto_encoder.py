@@ -20,7 +20,7 @@ class AutoEncoder(ModelAPI):
 
         self.inputs = inputs
 
-        self.samples = []
+        self.samples = True
         self.batch_size_generator = lambda x: None
 
     def print_loss(self):
@@ -34,12 +34,11 @@ class AutoEncoder(ModelAPI):
             print(f'\t{sample.tolist()}')
 
     def get_samples(self, samples, print_samples=False):
-        if samples:
-            output = self.model(self.dataset.test_dataset[0][:samples + 1])
-            output = (output * self.dataset.std) + self.dataset.mean
-            if print_samples:
-                self.print_samples()
-            return output
+        output = self.model(self.dataset.test_dataset[0][:samples + 1])
+        output = (output * self.dataset.std) + self.dataset.mean
+        if print_samples:
+            self.print_samples()
+        return output
 
     def add_datasets(self, *datasets):
         for file_name in datasets:

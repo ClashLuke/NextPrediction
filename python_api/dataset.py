@@ -34,7 +34,7 @@ class Dataset:
 
     def split(self, test_split=0.2, eval_split=0.1):
         for i, dataset in enumerate(self.dataset):
-            items = d.size(0)
+            items = dataset.size(0)
             test_items = int(items * test_split)
             eval_items = int(items * eval_split)
             train_items = items - test_items - eval_items
