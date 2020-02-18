@@ -2,7 +2,7 @@
 An API providing metadata of the future.
 
 ## Structure
-* [**Coverage**](#coverage)
+* [**Badges**](#badges)
 * [**Components**](#components)
 * [**Design**](#design)
 * [**Repository**](#repository)
@@ -17,11 +17,11 @@ An API providing metadata of the future.
   * [*Jelbi*](#Jelbi)
   * [*Swobbee*](#Swobbee)
  
-## Coverage
+## Badges
  | Type | Status |
  | --- | --- |
  | Readability | [![BCH compliance](https://bettercodehub.com/edge/badge/ClashLuke/NextPrediction?branch=master)](https://bettercodehub.com/) |
-
+ | Conformity | [![DeepSource](https://static.deepsource.io/deepsource-badge-light-mini.svg)](https://deepsource.io/gh/ClashLuke/NextPrediction/?ref=repository-badge) | 
  
  
 ## Components
