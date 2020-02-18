@@ -20,7 +20,7 @@ class AutoEncoder(ModelAPI):
 
         self.inputs = inputs
 
-        self.samples = True
+        self.sample_list = []
         self.batch_size_generator = lambda x: None
 
     def print_loss(self):
@@ -30,14 +30,12 @@ class AutoEncoder(ModelAPI):
                 f" {int(time.time() - self.processing_start)}")
 
     def print_samples(self):
-        for sample in self.samples:
+        for sample in self.sample_list:
             print(f'\t{sample.tolist()}')
 
-    def get_samples(self, samples, print_samples, *args, **kwargs):
-        if args or kwargs:
-            print(f"Unknown arguments: {args}, Keyword Arguments: {kwargs}")
+    def get_samples(self, samples, print_samples):
         output = self.model(self.dataset.test_dataset[0][:samples + 1])
-        output = (output * self.dataset.std) + self.dataset.mean
+        self.sample_list = (output * self.dataset.std) + self.dataset.mean
         if print_samples:
             self.print_samples()
         return output

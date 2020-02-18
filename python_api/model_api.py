@@ -22,7 +22,7 @@ class ModelAPI:
         self.optimizer = None
 
     @staticmethod
-    def get_samples(*args, **kwargs):
+    def get_samples(samples, print_samples):
         raise NotImplementedError("Has to be overwritten by child classes")
 
     @staticmethod
@@ -61,7 +61,6 @@ class ModelAPI:
 
             if self.samples:
                 self.get_samples(samples, True)
-
             self.train_history.add_item(train_loss)
             self.train_history.plot('train.svg', self.lwma_window)
             self.test_history.add_item(test_loss)
