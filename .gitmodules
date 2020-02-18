@@ -1,3 +1,3 @@
-[submodule "LocAtE"]
-	path = LocAtE
-	url = https://www.github.com/ClashLuke/LocAtE
+[submodule "python_api/LocAtE"]
+	path = python_api/LocAtE
+	url = https://www.github.com/clashluke/LocAtE
