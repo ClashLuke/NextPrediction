@@ -80,11 +80,11 @@ evaluate the performance.
 ## Performance
 For a basic machine-learning based backend the most important metric isn't how responsive its UI is or how innovative the
 idea is. For a program everyone already needs, the most important measurement to provide is the raw performance data.\
-With less than 0.68 average error after training the model for half an hour on a low-end CPU, one can comfortably say that the
+With less than 0.4 average error after training the model for half an hour on a low-end CPU, one can comfortably say that the
 convergence is fast and the results are powerful. However, while still having visible convergence, they aren't close to 
 good enough for production-level accuracy. That's why a testing environment using a jupyter notebook on colaboratory
 with 17 million parameters was deployed, yielding similar results in minutes.\
-The best raw performance achieved, with two hours of training on CPU, is an incredible 0.47. With this accuracy, 
+The best raw performance achieved, with two hours of training on CPU, is an incredible 0.3. With this accuracy, 
 predictions can not just be made but also relied on.
 
 ## Application
