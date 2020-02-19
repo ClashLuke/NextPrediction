@@ -3,6 +3,8 @@ An API providing metadata of the future.
 
 ## Structure
 * [**Getting Started**](#getting-started)
+    + [Noteook](#Notebook)
+    * [Local](#Local)
 * [**Description**](#Description)
     * [Badges](#badges)
     * [Components](#components)
@@ -14,10 +16,27 @@ An API providing metadata of the future.
     * [Connection to existing projects](#connection-to-existing-projects)
 
 ## Getting Started
+### Notebook
 This repository contains an example [notebook](https://github.com/ClashLuke/NextPrediction/blob/master/example.ipynb) 
 demonstrating and explaining the usage of this library. \
 You can find the basic usage as well as configuration options and example outputs in this .notebook.\
 A generated sample, proving the validity of the generation can be found [here](#Application).
+
+### Local
+To get started on a local machine, you should first clone the repository recursively, to ensure the "LocAtE" library is
+cloned as well.
+```
+git clone --recursive https://github.com/ClashLuke/NextPrediction 
+```
+Afterwords you can go straight ahead into your python file or console and import the AutoEncoder class from the
+NextPrediction package using `from NextPrediction import AutoEncoder`.\
+Lastly, all that needs to be done to set it up is to create an AutoEncoder instance, add a dataset to it and start the
+training for, say, 10 epochs.
+```
+model = AutoEncoder(feature_list=[96, 96], inputs=1)
+model.add_dataset("NextPrediction/nextbike.csv")
+model.train(10)
+```
 
 ## Description
 ### Badges
