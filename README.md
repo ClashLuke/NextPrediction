@@ -88,10 +88,13 @@ The best raw performance achieved, with two hours of training on CPU, is an incr
 predictions can not just be made but also relied on.
 
 ## Application
-To ensure that those outputs (at a loss of 0.55) are not pure bogus, the outputs mentioned above were fed into google
-[maps](https://www.google.com/maps/dir/51.48691354437813,+13.566158326518877/51.49277607438486,+13.57558008207597/@51.4874183,13.5690996,15z/data=!3m1!4b1!4m10!4m9!1m3!2m2!1d13.5661583!2d51.4869135!1m3!2m2!1d13.5755801!2d51.4927761!3e1).
-![https://i.imgur.com/BhWieK4.png](https://i.imgur.com/BhWieK4.png)
-While 41 minutes instead of 14 minutes does seem a little far-fetched, you can't know what the used did between those stops.\
+To ensure that those outputs (at a loss of 0.25) are not pure bogus, the first list in the last list of lists seen in
+the example [notebook](https://github.com/ClashLuke/NextPrediction/blob/master/example.ipynb) was fed into google 
+[maps](https://www.google.com/maps/dir/50.756832750298166,+13.326533113131694/50.71492613025646,+13.255191700282955/@50.7514885,13.2113978,12z/data=!3m1!4b1!4m10!4m9!1m3!2m2!1d13.3265331!2d50.7568328!1m3!2m2!1d13.2551917!2d50.7149261!3e1).
+![https://github.com/ClashLuke/NextPrediction/blob/master/readme_resources/example.png](https://github.com/ClashLuke/NextPrediction/blob/master/readme_resources/example.png)
+With the console showing the time difference (in minutes) between start and end, and the map showing start and end points
+as well as the expected time to get from one point to another.
+While 49 minutes instead of 34 minutes does seem a little far-fetched, you can't know what the used did between those stops.\
 Visualizing the generated data shows that decent geolocation data can be generated as well as more-or-less accurate
 timestamps, implying that real-world application is possible.
 
