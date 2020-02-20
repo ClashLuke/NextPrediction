@@ -1,6 +1,6 @@
 import time
 
-from .LocAtE.libs import BlockBlock, device, get_model, parameter_count
+from .LocAtE.libs import BlockBlock, DEVICE, get_model, parameter_count
 from .dataset import Dataset
 from .model_api import ModelAPI
 
@@ -14,7 +14,7 @@ class AutoEncoder(ModelAPI):
 
         self.model = BlockBlock(len(features) - 1, inputs, features,
                                 [1] * len(features), False, True, 1)
-        self.model, self.optimizer = get_model(self.model, learning_rate, device)
+        self.model, self.optimizer = get_model(self.model, learning_rate, DEVICE)
         self.parameters = parameter_count(self.model)
         self.dataset = Dataset()
 

@@ -1,7 +1,7 @@
 import pandas
 import torch
 
-from .LocAtE.libs import device, flatten, prod
+from .LocAtE.libs import DEVICE, flatten, prod
 
 
 class Dataset:
@@ -17,7 +17,7 @@ class Dataset:
         item_counts = [len(a) for a in args]
         arg_count = len(args)
         total_item_count = prod(item_counts)
-        dropout = torch.ones((total_item_count, 6)).to(device)
+        dropout = torch.ones((total_item_count, 6)).to(DEVICE)
         for i in range(total_item_count):
             items = [args[idx][i % item_counts[idx]] for idx in range(arg_count)]
             items = list(flatten(items))
@@ -54,7 +54,7 @@ class Dataset:
         data_frame = data_frame.dropna()
         numpy_array = data_frame.values
 
-        tensor = torch.DoubleTensor(numpy_array).to(device)
+        tensor = torch.DoubleTensor(numpy_array).to(DEVICE)
         std, mean = torch.std_mean(tensor, 0, keepdim=True)
         tensor = (tensor - mean) / std
 
